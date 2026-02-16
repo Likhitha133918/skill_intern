@@ -1,0 +1,62 @@
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import os
+
+
+def scrape_headlines(url):
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print("Error fetching website:", e)
+        return []
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Using CSS selectors (different method)
+    elements = soup.select("h2, h3")
+
+    headlines = []
+    seen = set()
+
+    for element in elements:
+        text = element.get_text(strip=True)
+
+        # Custom filtering logic
+        if text and len(text.split()) > 5 and text not in seen:
+            headlines.append(text)
+            seen.add(text)
+
+    return headlines
+
+
+def save_headlines(headlines):
+    today = datetime.now().strftime("%Y-%m-%d")
+    filename = f"headlines_{today}.txt"
+
+    with open(filename, "w", encoding="utf-8") as file:
+        file.write(f"Top Headlines - {today}\n")
+        file.write("-" * 50 + "\n")
+
+        for i, headline in enumerate(headlines, 1):
+            file.write(f"{i}. {headline}\n")
+
+    return filename
+
+
+def main():
+    url = "https://www.aljazeera.com/"
+    print("Scraping headlines...")
+
+    headlines = scrape_headlines(url)
+
+    if headlines:
+        filename = save_headlines(headlines)
+        print(f"\n✅ Successfully saved {len(headlines)} headlines to {filename}")
+    else:
+        print("No headlines found.")
+
+
+if __name__ == "__main__":
+    main()
